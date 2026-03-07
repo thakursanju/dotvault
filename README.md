@@ -1,57 +1,134 @@
-# Sample Hardhat 3 Beta Project (`node:test` and `viem`)
+# DotVault
 
-This project showcases a Hardhat 3 Beta project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
+An ERC-4626 style yield vault for Polkadot Asset Hub that stakes DOT via precompiles, accrues staking rewards, and enables cross-chain transfers via XCM.
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+---
 
-## Project Overview
+## Overview
 
-This example project includes:
+DotVault lets users deposit native DOT tokens and receive vault shares in return. Deposited tokens are automatically bonded through the Polkadot staking precompile. As staking rewards are harvested and compounded, the share price increases — distributing yield proportionally to all holders without minting new shares.
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using [`node:test`](nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+---
 
-## Usage
+## Features
 
-### Running Tests
+- **Deposit** — Deposit DOT and receive vault shares (1:1 on first deposit, proportional thereafter)
+- **Withdraw** — Redeem shares for underlying DOT (unbonding period applies on Polkadot)
+- **Yield Harvesting** — Owner harvests staking rewards and compounds them into the vault
+- **Cross-Chain Transfers** — Bridge yield to another parachain via the XCM precompile
+- **Share Price** — Monotonically increases as yield is harvested
 
-To run all the tests in the project, execute the following command:
+---
 
-```shell
+## Contract Architecture
+
+```
+DotVault.sol
+├── Precompile Interfaces
+│   ├── IStaking       (0x0000000000000000000000000000000000000800)
+│   ├── IXCM           (0x0000000000000000000000000000000000000804)
+│   └── INativeAssets  (0x0000000000000000000000000000000000000806)
+├── Core Functions
+│   ├── deposit()
+│   ├── withdraw()
+│   ├── harvestYield()
+│   └── bridgeYieldToParachain()
+└── View Functions
+    ├── balanceOf()
+    ├── sharePrice()
+    ├── estimatedAPY()
+    └── depositorCount()
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js v18+
+- npm
+
+### Install
+
+```bash
+git clone https://github.com/YOUR_USERNAME/dotvault.git
+cd dotvault
+npm install --legacy-peer-deps
+```
+
+### Configure
+
+Create a `.env` file in the project root:
+
+```
+PRIVATE_KEY=your_private_key_here
+```
+
+### Compile
+
+```bash
+npx hardhat compile
+```
+
+### Test
+
+```bash
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `node:test` tests:
+Expected output: 15 passing tests covering deployment, deposit, withdraw, balanceOf, sharePrice, and admin functions.
 
-```shell
-npx hardhat test solidity
-npx hardhat test nodejs
+---
+
+## Deploy
+
+### Deploy to Westend Asset Hub (testnet)
+
+```bash
+npx hardhat run scripts/deploy.ts --network westendHub
 ```
 
-### Make a deployment to Sepolia
+### Deploy to Polkadot Asset Hub (mainnet)
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+```bash
+npx hardhat run scripts/deploy.ts --network polkadotHub
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+---
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+## Networks
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
+| Network           | Chain ID   | RPC                                              |
+|-------------------|------------|--------------------------------------------------|
+| Westend Asset Hub | 420420421  | https://westend-asset-hub-eth-rpc.polkadot.io    |
+| Polkadot Asset Hub| 420420420  | https://polkadot-asset-hub-eth-rpc.polkadot.io   |
 
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+---
+
+## Project Structure
+
+```
+dotvault/
+├── contracts/
+│   ├── DotVault.sol           # Main vault contract
+│   └── mocks/
+│       ├── MockStaking.sol    # Staking precompile mock for tests
+│       ├── MockNativeAssets.sol
+│       └── MockXCM.sol
+├── scripts/
+│   └── deploy.ts              # Deployment script
+├── test/
+│   └── DotVault.test.ts       # Full test suite (15 tests)
+├── hardhat.config.ts
+└── .env
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+---
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+## Built With
+
+- [Hardhat](https://hardhat.org/) — Ethereum development environment
+- [Polkadot Asset Hub](https://wiki.polkadot.network/docs/learn-assets) — EVM-compatible parachain
+- [ethers.js v6](https://docs.ethers.org/v6/) — Ethereum library
+- [Chai](https://www.chaijs.com/) — Test assertions
