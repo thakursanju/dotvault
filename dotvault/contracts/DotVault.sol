@@ -177,7 +177,7 @@ contract DotVault {
 
         // Bond the newly deposited tokens via the staking precompile
         try STAKING.bond(assets) {} catch {
-            // revert StakingFailed(); // [DEV] Commented out to allow frontend demo if testnet lacks precompile
+            revert StakingFailed();
         }
 
         emit Deposited(msg.sender, assets, shares);
@@ -200,11 +200,11 @@ contract DotVault {
 
         // Begin unbonding through the staking precompile
         try STAKING.unbond(assets) {} catch {
-            // revert StakingFailed(); // [DEV] Ignore unbonding revert on testnet
+            revert StakingFailed();
         }
 
-        // Transfer redeemed assets to the caller natively
-        (bool ok, ) = msg.sender.call{value: assets}("");
+        // Transfer redeemed assets to the caller via the native assets precompile
+        bool ok = NATIVE_ASSETS.transfer(msg.sender, assets);
         if (!ok) revert StakingFailed();
 
         emit Withdrawn(msg.sender, shares, assets);

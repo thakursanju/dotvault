@@ -1,57 +1,151 @@
-# Sample Hardhat 3 Beta Project (`node:test` and `viem`)
+# DotVault
 
-This project showcases a Hardhat 3 Beta project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
+A non-custodial yield vault for Polkadot Asset Hub. Users deposit native DOT, receive share tokens representing their proportional ownership, and the vault stakes deposited assets via the Polkadot staking precompile to generate yield. Yield is harvested by the owner and bridged to a parachain via XCM.
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+Built for **Polkadot Hackathon — Track 2: PVM Smart Contract** (Categories 2 & 3).
 
-## Project Overview
+---
 
-This example project includes:
+## Architecture
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using [`node:test`](nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+```
+User
+ │
+ ├── deposit(msg.value)  →  DotVault.sol
+ │                              │
+ │                              ├── mints shares (ERC-4626-style, 1:1 on first deposit)
+ │                              ├── calls Staking Precompile → bond(amount)
+ │                              └── emits Deposited(user, amount, shares)
+ │
+ └── withdraw(shares)   →  DotVault.sol
+                                │
+                                ├── burns shares, calculates assets
+                                ├── calls Staking Precompile → unbond(amount)
+                                ├── transfers DOT back to user via ERC-20 precompile
+                                └── emits Withdrawn(user, assets, shares)
 
-## Usage
-
-### Running Tests
-
-To run all the tests in the project, execute the following command:
-
-```shell
-npx hardhat test
+Owner
+ ├── harvestYield()     →  queries current era rewards via Staking Precompile
+ │                          accumulates yield into totalDeposited (raises share price)
+ │
+ └── bridgeYieldToParachain(era, dest, amount)
+                        →  calls XCM Precompile → teleportAssets to parachain
 ```
 
-You can also selectively run the Solidity or `node:test` tests:
+### Precompiles used
 
-```shell
-npx hardhat test solidity
-npx hardhat test nodejs
+| Precompile | Address (Westend) | Address (Polkadot) | Function |
+|---|---|---|---|
+| Staking | `0x0000…0800` | `0x0000…0800` | bond, unbond, withdrawUnbonded, currentEra, erasStakersReward |
+| ERC-20 (DOT) | `0x0000…0806` | `0x0000…0806` | transfer (DOT back to user on withdraw) |
+| XCM | `0x0000…0804` | `0x0000…0804` | teleportAssets (bridge yield to parachain) |
+
+> Verify exact addresses at: https://docs.substrate.io/reference/address-formats/
+
+---
+
+## Prerequisites
+
+- Node.js 18+
+- A funded Westend account (get WND from https://faucet.polkadot.io)
+
+---
+
+## Setup
+
+```bash
+npm install
+cp .env.example .env
+# Edit .env and set your PRIVATE_KEY
 ```
 
-### Make a deployment to Sepolia
-
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+`.env` requires:
+```
+PRIVATE_KEY=0x_your_private_key_here
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+---
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+## Compile
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+```bash
+npm run compile
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+Compiles with `solc 0.8.24`, `evmVersion: london` — required for Polkadot Asset Hub compatibility.
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
+---
+
+## Test
+
+```bash
+npm test
 ```
+
+Expected: **29/29 passing**. The staking precompile is mocked via `hardhat_setCode` in the test setup so withdraw flows work on the local Hardhat network.
+
+Run coverage:
+```bash
+npx hardhat coverage
+```
+
+---
+
+## Deploy
+
+### Westend testnet (recommended first)
+
+```bash
+npm run deploy:westend
+```
+
+Outputs the deployed contract address. Verify at: https://westend-asset-hub.subscan.io
+
+### Polkadot mainnet
+
+```bash
+npm run deploy:polkadot
+```
+
+---
+
+## Key design decisions
+
+**Share price model** — shares are minted at a 1:1 ratio on the first deposit. Subsequent deposits mint shares proportional to `(amount * totalShares) / totalDeposited`, so early depositors automatically benefit from yield accumulation.
+
+**No cooldown in Solidity** — unbonding cooldowns are enforced at the staking precompile level (28 days on Polkadot). The contract does not duplicate this logic.
+
+**Owner-only yield operations** — `harvestYield` and `bridgeYieldToParachain` are restricted to the owner. A future version could use a keeper network or Polkadot's scheduler pallet.
+
+**CEI pattern** — all state updates (shares, totals) happen before any external precompile call to prevent reentrancy.
+
+---
+
+## Project structure
+
+```
+contracts/
+  DotVault.sol          # Main vault contract
+scripts/
+  deploy.ts             # Deployment script (Westend + Polkadot)
+test/
+  DotVault.test.ts      # Full test suite (29 tests)
+  helpers/
+    MockStaking.sol     # Staking precompile mock for local tests
+hardhat.config.ts       # Network config (evmVersion: london for Asset Hub)
+```
+
+---
+
+## Track 2 categories
+
+| Category | How DotVault qualifies |
+|---|---|
+| **Category 2 — Polkadot native assets** | Vaults and stakes native DOT/WND directly. No ERC-20 wrapper. |
+| **Category 3 — Precompiles** | Calls staking, ERC-20, and XCM precompiles on Polkadot Asset Hub. |
+
+---
+
+## License
+
+ISC

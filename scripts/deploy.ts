@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   console.log(`  Validator B : ${VALIDATOR_B}`);
 
   const DotVault = await ethers.getContractFactory("DotVault");
-  const vault = await DotVault.deploy();
+  const vault = await DotVault.deploy({ gasLimit: 50000000 });
 
   // Wait for deployment to be mined
   await vault.waitForDeployment();

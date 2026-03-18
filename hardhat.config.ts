@@ -1,27 +1,42 @@
-import { HardhatUserConfig } from "hardhat/config";
+import { HardhatUserConfig, vars } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import * as dotenv from "dotenv";
+import "@parity/hardhat-polkadot";
+import dotenv from "dotenv";
 
 dotenv.config();
 
+const privateKey = process.env.PRIVATE_KEY;
+if (!privateKey) {
+  console.warn(
+    "⚠️  WARNING: PRIVATE_KEY environment variable not found. Please set it in your .env file for network deployments."
+  );
+}
+
 const config: HardhatUserConfig = {
-  solidity: {
-    compilers: [
-      { version: "0.8.24" },
-      { version: "0.8.28" },
-    ]
+  solidity: "0.8.28",
+  resolc: {
+    compilerSource: "npm",
+    settings: {},
   },
   networks: {
-    westendHub: {
-      chainId: 420420421,
-      url: "https://westend-asset-hub-eth-rpc.polkadot.io",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-    } as any,
-    polkadotHub: {
-      chainId: 420420420,
-      url: "https://polkadot-asset-hub-eth-rpc.polkadot.io",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-    } as any, 
+    hardhat: {
+      // polkavm: true,
+      // forking: {
+      //   url: "https://testnet-passet-hub-eth-rpc.polkadot.io"
+      // },
+      // adapterConfig: {
+      //   adapterBinaryPath: "./bin/eth-rpc",
+      //   dev: true,
+      // },
+    },
+    localhost: {
+      url: "http://127.0.0.1:8545/",
+    },
+    passetHubTestnet: {
+      polkavm: true,
+      url: "https://testnet-passet-hub-eth-rpc.polkadot.io",
+      accounts: privateKey ? [privateKey] : [],
+    },
   },
 };
 

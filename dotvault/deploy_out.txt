@@ -1,0 +1,81 @@
+﻿[dotenv@17.3.1] injecting env (1) from .env -- tip: ­ƒøá´©Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ÔÜí´©Å secrets for agents: https://dotenvx.com/as2
+============================================================
+  DotVault Deployment Script
+============================================================
+Deploying with account: 0xCF53F51D6eec12Bf6B283CF534dfcD498b625708
+Account balance: 9.999 WND
+
+Deploying DotVault...
+node.exe : [Deployment 
+Failed] ProviderError: 
+Metadata error: The 
+generated code is not 
+compatible with the 
+node
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([Deployment F   
+ ai...e with the no    
+de:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+    at 
+HttpProvider.request (D
+:\dotvault\dotvault\nod
+e_modules\hardhat\src\i
+nternal\core\providers\
+http.ts:116:21)
+    at processTicksAndR
+ejections (node:interna
+l/process/task_queues:1
+05:5)
+    at async HardhatEth
+ersProvider.estimateGas
+ (D:\dotvault\dotvault\
+node_modules\@nomicfoun
+dation\hardhat-ethers\s
+rc\internal\hardhat-eth
+ers-provider.ts:246:27)
+    at async D:\dotvaul
+t\dotvault\node_modules
+\@nomicfoundation\hardh
+at-ethers\src\signers.t
+s:339:35
+    at async 
+Promise.all (index 0)
+    at async HardhatEth
+ersSigner._sendUnchecke
+dTransaction (D:\dotvau
+lt\dotvault\node_module
+s\@nomicfoundation\hard
+hat-ethers\src\signers.
+ts:360:7)
+    at async HardhatEth
+ersSigner.sendTransacti
+on (D:\dotvault\dotvaul
+t\node_modules\@nomicfo
+undation\hardhat-ethers
+\src\signers.ts:185:18)
+    at async 
+ContractFactory.deploy 
+(D:\dotvault\dotvault\n
+ode_modules\ethers\src.
+ts\contract\factory.ts:
+111:24)
+    at async main (D:\d
+otvault\dotvault\script
+s\deploy.ts:23:17)
